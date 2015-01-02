@@ -4,29 +4,61 @@
     <meta charset="UTF-8">
     <title>Test</title>
     <script type="text/javascript" src="lib/jquery-2.1.1.js"></script>
+    <script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
     <script type="text/javascript" src="lib/jquery.blast.js"></script>
     <script type="text/javascript" src="lib/progressbar.js"></script>
-    <script type="text/javascript" src="src/quizzer.js"></script>
+
+    <script type="text/javascript" src="src/Quiz.js"></script>
+    <script type="text/javascript" src="src/Section.js"></script>
+    <script type="text/javascript" src="src/Quizzer.js"></script>
+
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.css">
 </head>
-<body>
-<div id="text">
-    <div id="progress-bar"></div>
-    <div id="section-1" class="section">
-        Information about tactics can be derived from accounts of battles, but the very military manuals known to have
-        existed and to have been used extensively by commanders, have not survived. Perhaps the greatest loss is the
-        book of
-        Sextus Julius Frontinus. But parts of his work were incorporated in the records of the historian Vegetius.
+<body role="document">
+<div class="container">
+    <div id="progress-bars">
+        <div id="current-progress-bar"></div>
+        <div id="total-progress-bar"></div>
+    </div>
+    <div class="well">
+        <input type="button" id="begin-learning" class="btn btn-primary" value="Begin Learning">
+
+        <div id="text"></div>
+        <input type="button" id="next-section" class="btn btn-primary" value="Next Section">
     </div>
 
-    <br>
+</div>
 
-    <div id="section-2" class="section">
-        The importance of the choice of ground is pointed out.
-        There is an advantage of height over the enemy and if you are pitting infantry against cavalry, the rougher the
-        ground the better. The sun should be behind you to dazzle the enemy. If there is strong wind it should blow away
-        from you, giving advantage to your missiles and blinding the enemy with dust.
+<div class="modal fade" id="questionsModal" tabindex="-1" role="dialog" aria-labelledby="questionsModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Mini Quiz</h4>
+            </div>
+            <div id="questions-modal-body" class="btn-group-vertical" data-toggle="buttons"></div>
+            <div class="modal-footer">
+                <button id="quiz-continue-button" type="button" class="btn btn-primary" disabled>Continue</button>
+            </div>
+        </div>
     </div>
 </div>
+
+<div class="modal fade" id="resultModal" tabindex="-1" role="dialog" aria-labelledby="questionsModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="resultModalTitle">Result:</h4>
+            </div>
+            <div id="result-modal-body"></div>
+            <div class="modal-footer">
+                <button id="result-continue-button" type="button" class="btn btn-primary">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
