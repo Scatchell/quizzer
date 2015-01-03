@@ -43,6 +43,12 @@ function Quizzer(sections) {
 
     self.nextSection = function () {
         self.currentSectionNumber += 1;
+
+        //todo add logic to (randomly?) select previous quizzes to add to current sections quiz - especially select questions that were answered incorrectly
+        if(self.currentSectionNumber == 3) {
+            var firstSection = self.getSection(1);
+            self.currentSection().addQuiz(firstSection.getQuiz(1));
+        }
     };
 
     self.showNextSectionButton = function () {
@@ -51,6 +57,10 @@ function Quizzer(sections) {
 
     self.currentSection = function () {
         return self.sections[self.currentSectionNumber - 1];
+    };
+
+    self.getSection = function (sectionNumber) {
+        return self.sections[sectionNumber - 1];
     };
 
     self.totalWordsForAllSections = function () {
@@ -92,13 +102,13 @@ function Quizzer(sections) {
         });
     };
 
-    function resetQuiz() {
+    function resetQuizElements() {
         $('#questions-modal-body').html('');
         $('#quiz-continue-button').prop("disabled", true);
     }
 
     self.currentSectionHasQuizzes = function () {
-        return self.currentSection().quizes.length > 0;
+        return self.currentSection().quizzes.length > 0;
     };
 
     self.createSections = function () {
@@ -107,37 +117,85 @@ function Quizzer(sections) {
         });
     };
 
-    self.quizForCurrentSection = function (quizCompleteCallback) {
-        var modal = $('#questionsModal');
+    function setupQuiz(quiz) {
+        var questionsModalBody = $('#questions-modal-body');
 
-        resetQuiz();
+        $('<div id="modal-question">').html(quiz.question).appendTo(questionsModalBody);
 
-        self.currentSection().quizes.forEach(function (quiz) {
-            var questionsModalBody = $('#questions-modal-body');
+        $.each(quiz.answers, function (index, answer) {
+            $('<label class="btn btn-primary">').append(
+                $('<input type="radio" name="options" id="option' + (index + 1) + '" autocomplete="off" checked="">')
+            ).append(answer)
+                .appendTo($('#questions-modal-body'));
+        });
 
-            $('<div id="modal-question">').html(quiz.question).appendTo(questionsModalBody);
+        var answers = $('#questions-modal-body label');
 
-            $.each(quiz.answers, function (index, answer) {
-                $('<label class="btn btn-primary">').append(
-                    $('<input type="radio" name="options" id="option' + (index + 1) + '" autocomplete="off" checked="">')
-                ).append(answer)
-                    .appendTo($('#questions-modal-body'));
-            });
-
-            var answers = $('#questions-modal-body label');
-
-            $.each(answers, function (index, answer) {
-                $(answer).click(function () {
-                    $('#quiz-continue-button').removeAttr('disabled');
-                    quiz.selectAnswer(index + 1);
-                });
+        $.each(answers, function (index, answer) {
+            $(answer).click(function () {
+                $('#quiz-continue-button').removeAttr('disabled');
+                quiz.selectAnswer(index + 1);
             });
         });
+    }
+
+    function hideQuestionsModal() {
+        var questionsModalDiv = $('#questionsModal');
+        questionsModalDiv.modal('hide');
+    }
+
+    function quizCheck(quiz, nextQuizCallback) {
+        var resultModalBody = $('#result-modal-body');
+        var result = quiz.correct() ? 'Correct!' : 'Wrong :(';
+        var resultDetails = quiz.correct() ? '' : 'The correct answer was: ' + quiz.correctAnswerText();
+        resultModalBody.html(
+            'You were ' + result +
+            '<br>' + '<br>' + resultDetails
+        );
+        var resultModal = $('#resultModal');
+        var resultContinueButton = $('#result-continue-button');
+        resultContinueButton.unbind('click');
+        resultContinueButton.click(function () {
+            resultModal.modal('hide');
+
+            if (self.currentSection().lastQuiz()) {
+
+                self.nextSection();
+
+                var currentSection = $('#section-' + self.currentSectionNumber);
+                currentSection.show();
+
+                self.playWordsForCurrentSection();
+            } else {
+                nextQuizCallback();
+            }
+        });
+
+        var nextSectionButton = $('#next-section');
+        nextSectionButton.hide();
+
+        resultModal.modal();
+    }
+
+    self.quizzesForCurrentSection = function () {
+        var quiz = self.currentSection().nextQuiz();
+
+        resetQuizElements();
+        setupQuiz(quiz);
+
+        function quizCompleteCallback() {
+            hideQuestionsModal();
+
+            quizCheck(quiz, self.quizzesForCurrentSection);
+        }
 
         if (self.currentSectionHasQuizzes()) {
             var continueButton = $('#quiz-continue-button');
             continueButton.unbind('click');
+
             continueButton.click(quizCompleteCallback);
+
+            var modal = $('#questionsModal');
             modal.modal();
         } else {
             quizCompleteCallback();
@@ -147,45 +205,9 @@ function Quizzer(sections) {
 
 }
 
-var sections = [
-    new Section('Information about tactics can be derived from accounts of battles, but the very military manuals known to have existed and to have been used extensively by commanders, have not survived. Perhaps the greatest loss is the book of Sextus Julius Frontinus. But parts of his work were incorporated in the records of the historian Vegetius.',
-        [
-            new Quiz('Where did the information about roman battle tactics come from?',
-                [
-                    'From ancient roman texts',
-                    'Derived from accounts of battle',
-                    'Obtained mostly from a book written by Sextus Julius Frontinus',
-                    'Obtained primarily from the historian Vegetius'
-                ], 2)
-        ]
-    ),
-    new Section('The importance of the choice of ground is pointed out.<br>There is an advantage of height over the enemy and if you are pitting infantry against cavalry, the rougher the ground the better. The sun should be behind you to dazzle the enemy. If there is strong wind it should blow away from you, giving advantage to your missiles and blinding the enemy with dust.',
-        [
-            new Quiz('Which is NOT one of the mentioned advantages when choosing a battle grounds?',
-                [
-                    'Keeping the high ground',
-                    'Keeping the Sun behind you',
-                    'Making sure the wind blows away from you',
-                    'Using missiles against the enemy calvary'
-                ], 4)
-        ]
-    ),
-    new Section('In the battle line, each man should have three feet of space, while the distance between the ranks is given as six feet. <br>Thus 10\'000 men can be placed in a rectangle about 1\'500 yards by twelve yards, and it was advised not to extend the line beyond that.<br><br>The normal arrangement was to place the infantry in the centre and the cavalry on the wings. The function of the latter was to prevent the centre from being outflanked and once the battle turned and the enemy started to retreat the cavalry moved forward and cut them down. - Horsemen were always a secondary force in ancient warfare, the main fighting being done by the infantry.',
-        [
-            new Quiz('What were horsemen always considered in ancient warfare?',
-                [
-                    'A secondary force',
-                    'The most critical force in the battle',
-                    'Weaker than infantry forces',
-                    'A force to drive the enemy to retreat'
-                ], 1)
-        ]
-    )
-];
-
 $(document).ready(function () {
     totalProgressBar = new ProgressBar.Line('#total-progress-bar', {
-        color: '#FCB03C'
+        color: '#7CFC3F'
     });
 
     var beginButton = $('#begin-learning');
@@ -203,44 +225,12 @@ $(document).ready(function () {
 
     nextSectionButton.hide();
     nextSectionButton.click(function () {
-        nextSectionButton.hide();
         var currentSectionText = $('section-' + quizzer.currentSectionNumber);
 
         currentSectionText.hide();
         currentSectionText.show();
 
-        quizzer.quizForCurrentSection(
-            function () {
-                //todo use self.sections instead? Should require moving into quizzer object
-                var quiz = sections[quizzer.currentSectionNumber - 1].getFirstQuiz();
-
-                var questionsModalDiv = $('#questionsModal');
-                questionsModalDiv.modal('hide');
-
-                var resultModalBody = $('#result-modal-body');
-                var result = quiz.correct() ? 'Correct!' : 'Wrong :(';
-                var resultDetails = quiz.correct() ? '' : 'The correct answer was: ' + quiz.correctAnswerText();
-                resultModalBody.html(
-                    'You were ' + result +
-                    '<br>' + '<br>' + resultDetails
-                );
-                var resultModal = $('#resultModal');
-                var resultContinueButton = $('#result-continue-button');
-                resultContinueButton.unbind('click');
-                resultContinueButton.click(function () {
-                    resultModal.modal('hide');
-
-                    quizzer.nextSection();
-
-                    var currentSection = $('#section-' + quizzer.currentSectionNumber);
-                    currentSection.show();
-
-                    quizzer.playWordsForCurrentSection();
-                });
-
-                resultModal.modal();
-            }
-        );
+        quizzer.quizzesForCurrentSection();
     });
 
 
@@ -249,6 +239,42 @@ $(document).ready(function () {
             nextSectionButton.click();
         }
     });
+
+    var sections = [
+        new Section('Information about tactics can be derived from accounts of battles, but the very military manuals known to have existed and to have been used extensively by commanders, have not survived. Perhaps the greatest loss is the book of Sextus Julius Frontinus. But parts of his work were incorporated in the records of the historian Vegetius.',
+            [
+                new Quiz('Where did the information about roman battle tactics come from?',
+                    [
+                        'From ancient roman texts',
+                        'Derived from accounts of battle',
+                        'Obtained mostly from a book written by Sextus Julius Frontinus',
+                        'Obtained primarily from the historian Vegetius'
+                    ], 2)
+            ]
+        ),
+        new Section('The importance of the choice of ground is pointed out.<br>There is an advantage of height over the enemy and if you are pitting infantry against cavalry, the rougher the ground the better. The sun should be behind you to dazzle the enemy. If there is strong wind it should blow away from you, giving advantage to your missiles and blinding the enemy with dust.',
+            [
+                new Quiz('Which is NOT one of the mentioned advantages when choosing a battle grounds?',
+                    [
+                        'Keeping the high ground',
+                        'Keeping the Sun behind you',
+                        'Making sure the wind blows away from you',
+                        'Using missiles against the enemy calvary'
+                    ], 4)
+            ]
+        ),
+        new Section('In the battle line, each man should have three feet of space, while the distance between the ranks is given as six feet. <br>Thus 10\'000 men can be placed in a rectangle about 1\'500 yards by twelve yards, and it was advised not to extend the line beyond that.<br><br>The normal arrangement was to place the infantry in the centre and the cavalry on the wings. The function of the latter was to prevent the centre from being outflanked and once the battle turned and the enemy started to retreat the cavalry moved forward and cut them down. - Horsemen were always a secondary force in ancient warfare, the main fighting being done by the infantry.',
+            [
+                new Quiz('What were horsemen always considered in ancient warfare?',
+                    [
+                        'A secondary force',
+                        'The most critical force in the battle',
+                        'Weaker than infantry forces',
+                        'A force to drive the enemy to retreat'
+                    ], 1)
+            ]
+        )
+    ];
 
     var quizzer = new Quizzer(sections);
 

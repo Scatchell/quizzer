@@ -1,11 +1,18 @@
-#next-section{
+#next-section {
     margin: 20px;
 }
 
-.section{
+.section {
     margin-bottom: 20px;
 }
 
-#modal-question{
+#modal-question {
     margin-bottom: 20px;
+    text-align: center;
+}
+
+#questions-modal-body {
+    display: block;
+    margin: auto;
+    width: 500px
 }
