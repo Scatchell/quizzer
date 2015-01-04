@@ -1,11 +1,52 @@
 var WORD_DISPLAY_SPEED = 5;
+var BEGIN_REPEATING_QUIZZES_SECTION_NUM = 2;
+var REPEAT_QUIZZES_FREQUENCY = 2;
 
-function Quizzer(sections) {
+function Quizzer(sections, randomizerCallback) {
+    function randomizer(array) {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+
     var self = this;
+    self.randomizer = (randomizerCallback == undefined ? randomizer : randomizerCallback);
 
     self.currentSectionNumber = 1;
 
     self.sections = sections;
+
+    function incorrectlyAnsweredQuizzes() {
+        var incorrectQuizzes = [];
+
+        self.sections.forEach(function (section) {
+            incorrectQuizzes = incorrectQuizzes.concat(section.incorrectQuizzes());
+        });
+
+        return incorrectQuizzes;
+    }
+
+    function correctlyAnsweredQuizzes() {
+        var incorrectQuizzes = [];
+
+        self.sections.forEach(function (section) {
+            incorrectQuizzes = incorrectQuizzes.concat(section.correctQuizzes());
+        });
+
+        return incorrectQuizzes;
+    }
+
+    self.selectRepeatQuiz = function () {
+        var repeatQuiz;
+
+        var incorrectQuizzes = incorrectlyAnsweredQuizzes();
+
+        if (incorrectQuizzes.length == 0) {
+            repeatQuiz = self.randomizer(correctlyAnsweredQuizzes());
+        } else {
+            repeatQuiz = incorrectQuizzes[0];
+        }
+
+        return repeatQuiz;
+    };
 
     self.hideAllWords = function () {
         var allWords = $("span[id^='word-']");
@@ -44,10 +85,9 @@ function Quizzer(sections) {
     self.nextSection = function () {
         self.currentSectionNumber += 1;
 
-        //todo add logic to (randomly?) select previous quizzes to add to current sections quiz - especially select questions that were answered incorrectly
-        if(self.currentSectionNumber == 3) {
-            var firstSection = self.getSection(1);
-            self.currentSection().addQuiz(firstSection.getQuiz(1));
+        //todo repeate wrong quizzes always if they exist, only repeat correct quizzes with repeat frequency
+        if (self.currentSectionNumber >= BEGIN_REPEATING_QUIZZES_SECTION_NUM && (self.currentSectionNumber % REPEAT_QUIZZES_FREQUENCY == 0)) {
+            self.currentSection().addQuiz(self.selectRepeatQuiz());
         }
     };
 
@@ -263,7 +303,10 @@ $(document).ready(function () {
                     ], 4)
             ]
         ),
-        new Section('In the battle line, each man should have three feet of space, while the distance between the ranks is given as six feet. <br>Thus 10\'000 men can be placed in a rectangle about 1\'500 yards by twelve yards, and it was advised not to extend the line beyond that.<br><br>The normal arrangement was to place the infantry in the centre and the cavalry on the wings. The function of the latter was to prevent the centre from being outflanked and once the battle turned and the enemy started to retreat the cavalry moved forward and cut them down. - Horsemen were always a secondary force in ancient warfare, the main fighting being done by the infantry.',
+        new Section('In the battle line, each man should have three feet of space, while the distance between the ranks is given as six feet. <br>\
+        Thus 10\'000 men can be placed in a rectangle about 1\'500 yards by twelve yards, and it was advised not to extend the line beyond that.<br><br>\
+        The normal arrangement was to place the infantry in the centre and the cavalry on the wings. The function of the latter was to prevent the centre from being outflanked and once the battle turned and the enemy started to retreat the cavalry moved forward and cut them down. - Horsemen were always a secondary force in ancient warfare, the main fighting being done by the infantry.<br><br>\
+        It was recommended that if your cavalry was weak it was to be stiffened with lightly armed foot soldiers.',
             [
                 new Quiz('What were horsemen always considered in ancient warfare?',
                     [
@@ -271,6 +314,19 @@ $(document).ready(function () {
                         'The most critical force in the battle',
                         'Weaker than infantry forces',
                         'A force to drive the enemy to retreat'
+                    ], 1)
+            ]
+        ),
+        new Section("Vegetius also stresses the need for adequate reserves. These could prevent an enemy from trying to envelope one's own forces, or could fend off enemy cavalry attacking the rear of the infantry.<br><br>\
+            Alternatively, they could themselves move to the sides and perform an enveloping manoeuver against an opponent.<br><br>\
+            The position to be taken up by the commander was normally on the right wing.",
+            [
+                new Quiz('What was NOT one of the mentioned benefits of having adequate reserves?',
+                    [
+                        'Attack the rear of the enemy infantry',
+                        'Preventing an enemy from enveloping your forces',
+                        'Fend off enemy calvary attacking the rear of the infantry',
+                        'Move to the sides and perform an enveloping maneuver against an opponent'
                     ], 1)
             ]
         )

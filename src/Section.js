@@ -23,4 +23,20 @@ function Section(sectionText, quizzes) {
     self.lastQuiz = function () {
         return self.quizzes.length == self.currentQuiz;
     };
+
+    self.incorrectQuizzes = function () {
+        var incorrectQuizzes = self.quizzes.filter(function (quiz) {
+            return quiz.hasBeenAnswered() && !quiz.correct();
+        });
+
+        return incorrectQuizzes;
+    };
+
+    self.correctQuizzes = function () {
+        var correctQuizzes = self.quizzes.filter(function (quiz) {
+            return quiz.hasBeenAnswered() && quiz.correct();
+        });
+
+        return correctQuizzes;
+    };
 }

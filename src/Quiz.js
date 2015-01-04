@@ -18,4 +18,8 @@ function Quiz(question, answers, correctAnswer){
     self.correctAnswerText = function () {
         return self.answers[self.correctAnswer - 1];
     };
+
+    self.hasBeenAnswered = function () {
+        return self.isAnswerCorrect != undefined;
+    }
 }
