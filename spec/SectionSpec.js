@@ -5,8 +5,8 @@ describe("section", function () {
         var quizTwo = new Quiz('test question 2', ['answer3', 'answer4'], 1);
         var section = new Section("test", [quizOne, quizTwo]);
 
-        expect(section.currentQuiz).toBe(0);
-        expect(section.nextQuiz()).toBe(quizOne);
+        expect(section.currentQuizNumber).toBe(0);
+        expect(section.currentQuiz()).toBe(quizOne);
     });
 
     it("should know when not on the last quiz", function () {
@@ -15,7 +15,7 @@ describe("section", function () {
         var section = new Section("test", [quizOne, quizTwo]);
 
         section.nextQuiz();
-        expect(section.lastQuiz()).toBe(false);
+        expect(section.onLastQuiz()).toBe(false);
     });
 
     it("should know when reached the last quiz", function () {
@@ -25,7 +25,7 @@ describe("section", function () {
 
         section.nextQuiz();
         section.nextQuiz();
-        expect(section.lastQuiz()).toBe(true);
+        expect(section.onLastQuiz()).toBe(true);
     });
 
     it("should get the next quiz", function () {
@@ -34,8 +34,8 @@ describe("section", function () {
         var section = new Section("test", [quizOne, quizTwo]);
 
         section.nextQuiz();
-        expect(section.currentQuiz).toBe(1);
-        expect(section.nextQuiz()).toBe(quizTwo);
+        expect(section.currentQuizNumber).toBe(1);
+        expect(section.currentQuiz()).toBe(quizTwo);
     });
 
     it("should be undefined when no more quizzes", function () {
@@ -45,7 +45,7 @@ describe("section", function () {
 
         section.nextQuiz();
         section.nextQuiz();
-        expect(section.currentQuiz).toBe(2);
+        expect(section.currentQuizNumber).toBe(2);
         expect(section.nextQuiz()).toBe(undefined);
     });
 

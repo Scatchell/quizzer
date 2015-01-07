@@ -36,11 +36,53 @@ describe("quizzer", function () {
     });
 
     it("should increment to next section", function () {
-        var quizzer = new Quizzer();
+        var sections = [
+            new Section('1 2 3 4 5',
+                []
+            ),
+            new Section('6 7 8',
+                []
+            ),
+            new Section('9 10',
+                []
+            )
+        ];
+
+        var quizzer = new Quizzer(sections);
 
         quizzer.nextSection();
 
         expect(quizzer.currentSectionNumber).toEqual(2);
+    });
+
+
+    it('should know when NOT on last section', function () {
+        var sections = [
+            new Section('1', []),
+            new Section('2', []),
+            new Section('3', [])
+        ];
+
+        var quizzer = new Quizzer(sections);
+
+        quizzer.nextSection();
+
+        expect(quizzer.onLastSection()).toEqual(false);
+    });
+
+    it('should know when on last section', function () {
+        var sections = [
+            new Section('1', []),
+            new Section('2', []),
+            new Section('3', [])
+        ];
+
+        var quizzer = new Quizzer(sections);
+
+        quizzer.nextSection();
+        quizzer.nextSection();
+
+        expect(quizzer.onLastSection()).toEqual(true);
     });
 
     it("should know total words for all sections", function () {

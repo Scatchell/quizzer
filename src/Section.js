@@ -3,25 +3,26 @@ function Section(sectionText, quizzes) {
 
     self.text = sectionText;
     self.quizzes = (quizzes == undefined ? [] : quizzes);
-    self.currentQuiz = 0;
+    self.currentQuizNumber = 0;
 
     self.addQuiz = function (quiz) {
         self.quizzes.push(quiz);
     };
 
     self.nextQuiz = function () {
-        var nextQuiz = self.quizzes[self.currentQuiz];
-        self.currentQuiz += 1;
+        self.currentQuizNumber += 1;
+    };
 
-        return nextQuiz;
+    self.currentQuiz = function () {
+        return self.quizzes[self.currentQuizNumber];
     };
 
     self.getQuiz = function (quizNumber) {
         return self.quizzes[quizNumber - 1];
     };
 
-    self.lastQuiz = function () {
-        return self.quizzes.length == self.currentQuiz;
+    self.onLastQuiz = function () {
+        return self.quizzes.length == self.currentQuizNumber;
     };
 
     self.incorrectQuizzes = function () {

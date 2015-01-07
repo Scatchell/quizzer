@@ -82,10 +82,14 @@ function Quizzer(sections, randomizerCallback) {
         return self.wordsForSection(self.currentSectionNumber);
     };
 
+    self.onLastSection = function () {
+        return self.currentSectionNumber == sections.length;
+    };
+
     self.nextSection = function () {
         self.currentSectionNumber += 1;
 
-        //todo repeate wrong quizzes always if they exist, only repeat correct quizzes with repeat frequency
+        //todo repeat wrong quizzes always if they exist, only repeat correct quizzes with repeat frequency
         if (self.currentSectionNumber >= BEGIN_REPEATING_QUIZZES_SECTION_NUM && (self.currentSectionNumber % REPEAT_QUIZZES_FREQUENCY == 0)) {
             self.currentSection().addQuiz(self.selectRepeatQuiz());
         }
@@ -134,7 +138,7 @@ function Quizzer(sections, randomizerCallback) {
             $(this).delay(currentWordIndex * WORD_DISPLAY_SPEED).fadeIn(700, function () {
                 var currentProgressForSection = (currentWordIndex + 1) / totalSectionWords;
                 var currentTotalProgress = (self.totalWordsForAllSectionsBeforeSection(self.currentSectionNumber) + currentWordIndex + 1) / self.totalWordsForAllSections();
-                var animationCallbackFunction = currentProgressForSection == 1 ? self.showNextSectionButton() : {};
+                var animationCallbackFunction = (currentProgressForSection == 1 && !self.onLastSection() ? self.showNextSectionButton() : {});
                 progressBar.animate(currentProgressForSection, {duration: 100}, animationCallbackFunction);
                 totalProgressBar.animate(currentTotalProgress, {duration: 100});
                 //    todo is there a way to get a promise back from here to mark completion of the section?
@@ -157,6 +161,7 @@ function Quizzer(sections, randomizerCallback) {
         });
     };
 
+    //todo highlight the most previous section in some color to make it stand out
     function setupQuiz(quiz) {
         var questionsModalBody = $('#questions-modal-body');
 
@@ -180,7 +185,7 @@ function Quizzer(sections, randomizerCallback) {
     }
 
     function hideQuestionsModal() {
-        var questionsModalDiv = $('#questionsModal');
+        var questionsModalDiv = $('#questions-modal');
         questionsModalDiv.modal('hide');
     }
 
@@ -192,15 +197,17 @@ function Quizzer(sections, randomizerCallback) {
             'You were ' + result +
             '<br>' + '<br>' + resultDetails
         );
-        var resultModal = $('#resultModal');
+        var resultModal = $('#result-modal');
         var resultContinueButton = $('#result-continue-button');
         resultContinueButton.unbind('click');
         resultContinueButton.click(function () {
             resultModal.modal('hide');
 
-            if (self.currentSection().lastQuiz()) {
-
+            if (self.currentSection().onLastQuiz()) {
                 self.nextSection();
+
+                var nextSectionButton = $('#next-section');
+                nextSectionButton.hide();
 
                 var currentSection = $('#section-' + self.currentSectionNumber);
                 currentSection.show();
@@ -211,14 +218,11 @@ function Quizzer(sections, randomizerCallback) {
             }
         });
 
-        var nextSectionButton = $('#next-section');
-        nextSectionButton.hide();
-
         resultModal.modal();
     }
 
     self.quizzesForCurrentSection = function () {
-        var quiz = self.currentSection().nextQuiz();
+        var quiz = self.currentSection().currentQuiz();
 
         resetQuizElements();
         setupQuiz(quiz);
@@ -227,6 +231,11 @@ function Quizzer(sections, randomizerCallback) {
             hideQuestionsModal();
 
             quizCheck(quiz, self.quizzesForCurrentSection);
+
+            //todo if hitting enter key too fast, the next section button doesnt work due to js errors - fix this
+            if (!self.currentSection().onLastQuiz()) {
+                self.currentSection().nextQuiz();
+            }
         }
 
         if (self.currentSectionHasQuizzes()) {
@@ -235,7 +244,7 @@ function Quizzer(sections, randomizerCallback) {
 
             continueButton.click(quizCompleteCallback);
 
-            var modal = $('#questionsModal');
+            var modal = $('#questions-modal');
             modal.modal();
         } else {
             quizCompleteCallback();
@@ -265,25 +274,42 @@ $(document).ready(function () {
 
     nextSectionButton.hide();
     nextSectionButton.click(function () {
-        var currentSectionText = $('section-' + quizzer.currentSectionNumber);
-
-        currentSectionText.hide();
-        currentSectionText.show();
-
         quizzer.quizzesForCurrentSection();
     });
 
 
-    $(document).keypress(function (e) {
-        if (nextSectionButton.is(':visible') && e.keyCode == 13) {
-            nextSectionButton.click();
+    $(document).keyup(function (e) {
+        var quizContinueButton = $('#quiz-continue-button');
+        if ($('#questions-modal-body').is(':visible')) {
+            //49-51 are keys 1,2,3,4
+            if (e.keyCode == 49) {
+                $('#option1').click();
+            } else if (e.keyCode == 50) {
+                $('#option2').click();
+            } else if (e.keyCode == 51) {
+                $('#option3').click();
+            } else if (e.keyCode == 52) {
+                $('#option4').click();
+                //    todo add avoiding click when button disabled
+                //tried && (quizContinueButton.prop("disabled") == false) but didn't work
+            } else if (e.keyCode == 13 && (quizContinueButton.prop("disabled") == false)) {
+                quizContinueButton.click();
+            }
+        } else {
+            var resultContinueButton = $('#result-continue-button');
+            if (resultContinueButton.is(':visible') && e.keyCode == 13) {
+                resultContinueButton.click();
+            } else if (nextSectionButton.is(':visible') && e.keyCode == 13) {
+                nextSectionButton.click();
+            }
         }
+
     });
 
     var sections = [
         new Section('Information about tactics can be derived from accounts of battles, but the very military manuals known to have existed and to have been used extensively by commanders, have not survived. Perhaps the greatest loss is the book of Sextus Julius Frontinus. But parts of his work were incorporated in the records of the historian Vegetius.',
             [
-                new Quiz('Where did the information about roman battle tactics come from?',
+                new Quiz('Where did most of the information about roman battle tactics come from?',
                     [
                         'From ancient roman texts',
                         'Derived from accounts of battle',
@@ -299,7 +325,7 @@ $(document).ready(function () {
                         'Keeping the high ground',
                         'Keeping the Sun behind you',
                         'Making sure the wind blows away from you',
-                        'Using missiles against the enemy calvary'
+                        'Choosing a natural defensive barrier'
                     ], 4)
             ]
         ),
@@ -329,6 +355,51 @@ $(document).ready(function () {
                         'Move to the sides and perform an enveloping maneuver against an opponent'
                     ], 1)
             ]
+        ),
+        new Section("The tortoise was essentially a defensive formation by which the legionaries would hold their shields overhead, except for the front rows, thereby creating a kind of shell-like armour shielding them against missiles from the front or above.",
+            [
+                new Quiz('The tortoise was NOT...',
+                    [
+                        'A formation meant to fend particularly against missiles',
+                        'A formation requiring shields to be held overhead',
+                        'A formation requiring shields to be held in the front',
+                        'A formation requiring shields to be held in the back'
+                    ], 4)
+            ]
+        ),
+        new Section("The wedge was commonly used by attacking legionaries, - legionaries formed up in a triangle, the front 'tip' being one man and pointing toward the enemy - this enabled small groups to be thrust well into the enemy and, when these formations expanded, the enemy troops were pushed into restricted positions, making hand-to-hand fighting difficult. This is where the short legionary gladius was useful, held low and used as a thrusting weapon, while the longer Celtic and Germanic swords became impossible to wield.",
+            [
+                new Quiz('The wedge formation would push enemy troops into restricted positions. Why was it mentioned this was particularly effective when fighting the Celtic and Germanic tribes?',
+                    [
+                        'They were less organized than the roman forces.',
+                        'The romans could more easily use their long weapons, while their enemies couldn\'t as easily use their shorter weapons',
+                        'The romans could more easily use their short weapons, while their enemies couldn\'t as easily use their long weapons',
+                        'The romans could more effectively defend with their large shields'
+                    ], 3),
+                new Quiz('What was the name of the short legionary thrusting weapon?',
+                    [
+                        'Short Sword',
+                        'Gladiator',
+                        'Wedge',
+                        'Gladius'
+                    ], 4)
+            ]
+        ),
+        new Section("The order to repel cavalry brought about the following formation. The first rank would form a firm wall with their shields, only their pila protruding, forming a vicious line of glistening spearheads ahead of the wall of shields. A horse, however well trained, could hardly be brought to break through such a barrier. The second rank of the infantry would then use its spears to drive off any attackers whose horses came to a halt. This formation would no doubt prove very effective, particularly against ill-disciplined enemy cavalry.", [
+                new Quiz('Based on the context of the paragraph, what is a pila?',
+                    [
+                        'A spear',
+                        'A sword',
+                        'A shield'
+                    ], 1),
+                new Quiz('Once the horses were stopped via the first ranks shield wall and pila, what would happen?',
+                    [
+                        'The back rank would fire missiles at the slowed calvary',
+                        'The second rank of infantry would use its spears to drive off any calvary that had come to a stop.',
+                        'The first rank would switch to their gladius and enter melee combat with the fallen horsemen',
+                        'The ranks would do nothing, and wait for the calvary to charge again'
+                    ], 2)
+            ]
         )
     ];
 
@@ -340,7 +411,5 @@ $(document).ready(function () {
 
     quizzer.hideAllWords();
 
-//    todo add full progress bar (reading of entire document)
-//    todo when hitting esc or not answering question, no way to continue to next section
-
-});
+})
+;
